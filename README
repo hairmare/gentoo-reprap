@@ -1,2 +1,16 @@
 The Gentoo RepRap Overlay aims to add all the patches and tools you need
 to run your ReRap under Gentoo Linux.
+
+My RepRap is a RepStrap and its still very much under construction. This
+overlay contains my tries on running all kinds of RepRap related software
+on Gentoo Linux.
+
+The ebuilds that don't have a keyword probably won't compile or have 
+missing deps. The ~x86 ones compile, but there are some untested bin/library
+combinations in them. Programming a (sanguino) RepRap motherboard and
+basic interfacing with x11-apps/replicatorg-bin and x11-apps/reprap-bin
+should be ok. 
+
+The dev-embedded/arduino ebuild has sanguino and reprap USE flags that you
+may use to patch the ebuilds /usr/share/arduino-XXXX dir with the needed 
+libraries.
