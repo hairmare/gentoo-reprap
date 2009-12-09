@@ -18,7 +18,7 @@ LICENSE="GPL-2 LGPL-2 CCPL-Attribution-ShareAlike-3.0"
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
 RESTRICT="strip binchecks"
-IUSE="java sanguino reprap"
+IUSE="java sanguino reprap makerbotwatch"
 RDEPEND="dev-embedded/avrdude sys-devel/crossdev"
 DEPEND="${RDEPEND} java? ( virtual/jre dev-embedded/uisp dev-java/jikes dev-java/rxtx dev-java/antlr )"
 
@@ -95,6 +95,10 @@ src_install() {
 
 		cp -a "${S}/../reprap-gen3-firmware-2009-08-05/libraries/SimplePacket" \
 		"${D}/usr/share/${P}/hardware/libraries/SimplePacket"
+	fi
+	if use makerbotwatch; then
+		cat "${FILESDIR}"/makerbot-watch.txt >> \
+		"${D}/usr/share/${P}/hardware/boards.txt"
 	fi
 
 	dodoc readme.txt
