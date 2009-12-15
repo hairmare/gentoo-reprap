@@ -22,7 +22,7 @@ src_install() {
 	dodoc *.txt
 
 	dodir /opt /opt/replicatorg /opt/replicatorg/lib /opt/replicatorg/bin \
-	/opt/replicatorg/firmware
+	/opt/replicatorg/firmware /opt/replicatorg/tools
 
 	mv "${D}/usr/lib" "${D}/opt/replicatorg/"
 	mv "${D}/usr/bin/replicatorg" "${D}/opt/replicatorg/bin/"
@@ -35,5 +35,9 @@ src_install() {
 	mv "${D}/usr/share/doc/replicatorg-bin-${PV}" "${D}/opt/replicatorg/doc"
 	mv firmware firmware.xml "${D}/opt/replicatorg/"
 	mv machines.xml "${D}/opt/replicatorg/" || die "no machines.xml installed"
+
+	# replicatorg expects avrdude in the tools dir
+	ln -s /etc/avrdude.conf "${D}/opt/replicatorg/tools/avrdude.conf"
+	ln -s /usr/bin/avrdude  "${D}/opt/replicatorg/tools/avrdude"
 
 }
