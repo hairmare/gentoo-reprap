@@ -1,0 +1,125 @@
+# Copyright 1999-2009 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo-x86/dev-embedded/arduino/arduino-0017.ebuild,v 1.1 2009/10/17 18:15:07 nixphoeni Exp $
+
+EAPI=2
+inherit eutils
+
+SNG_PV="1.4-r1"
+REPRAP_PV="1.2"
+
+DESCRIPTION="Arduino is an open-source AVR electronics prototyping platform"
+HOMEPAGE="http://arduino.cc/"
+SRC_URI="http://arduino.googlecode.com/files/${P}.tgz
+sanguino? ( http://sanguino.googlecode.com/files/sanguino-software-${SNG_PV}.zip )
+reprap? (
+http://downloads.sourceforge.net/project/reprap/Gen3%20Firmware/v${REPRAP_PV}/reprap-gen3-firmware-${REPRAP_PV}.zip )
+pidcontrol? ( http://arduino-pid-library.googlecode.com/files/PID_Beta0.6.zip )
+timer1? ( http://www.arduino.cc/playground/uploads/Code/TimerOne.zip )
+mstimer2? ( http://www.arduino.cc/playground/uploads/Main/MsTimer2.zip )"
+LICENSE="GPL-2 LGPL-2 CCPL-Attribution-ShareAlike-3.0"
+SLOT="0"
+KEYWORDS="~x86 ~amd64"
+RESTRICT="strip binchecks"
+IUSE="java sanguino reprap makerbotwatch pidcontrol timer1 mstimer2"
+RDEPEND="dev-embedded/avrdude sys-devel/crossdev"
+DEPEND="${RDEPEND} java? ( virtual/jre dev-embedded/uisp dev-java/jikes dev-java/rxtx dev-java/antlr )"
+
+pkg_setup() {
+	[ ! -x /usr/bin/avr-g++ ] && ewarn "Missing avr-g++; you need to crossdev -s4 avr"
+}
+
+pkg_postinst() {
+	pkg_setup
+	einfo "Copy /usr/share/${P}/hardware/cores/arduino/Makefile and edit it to suit the project"
+}
+
+src_prepare() {
+	#epatch "${FILESDIR}"/Makefile-${PV}.patch
+	rm -rf hardware/tools/avrdude*
+	if ! use java; then
+		rm -rf lib
+		rm -f arduino
+	else
+		# fix the provided arduino script to call out the right
+		# libraries, remove resetting of $PATH, and fix its
+		# reference to LD_LIBRARY_PATH (see bug #189249)
+		epatch "${FILESDIR}"/arduino-script-${PV}.patch
+	fi
+}
+
+src_install() {
+	mkdir -p "${D}/usr/share/${P}/" "${D}/usr/bin"
+	cp -a "${S}" "${D}/usr/share/"
+	fowners -R root:uucp "/usr/share/${P}/hardware"
+	if use java; then
+		sed -e  s@__PN__@${P}@g < "${FILESDIR}"/arduino > "${D}/usr/bin/arduino"
+		chmod +x "${D}/usr/bin/arduino"
+
+		# get rid of libraries provided by other packages
+		rm -f "${D}/usr/share/${P}/lib/RXTXcomm.jar"
+		rm -f "${D}/usr/share/${P}/lib/librxtxSerial.so"
+		rm -f "${D}/usr/share/${P}/lib/antlr.jar"
+		rm -f "${D}/usr/share/${P}/lib/ecj.jar"
+
+		# use system avrdude
+		# patching class files is too hard
+		dosym /usr/bin/avrdude "/usr/share/${P}/hardware/tools/avrdude"
+		dosym /etc/avrdude.conf "/usr/share/${P}/hardware/tools/avrdude.conf"
+
+		# IDE tries to compile these libs at first start up
+		fperms -R g+w "/usr/share/${P}/libraries"
+	fi
+	if use sanguino; then
+		cp -a "${S}/../sanguino-software-${SNG_PV}/cores/sanguino" \
+		"${D}/usr/share/${P}/hardware/arduino/cores/sanguino"
+		cp -a "${S}/../sanguino-software-${SNG_PV}/bootloaders/atmega644p" \
+		"${D}/usr/share/${P}/hardware/arduino/bootloaders/atmeg644p"
+
+		# remove libs that have sanguino replacements
+		rm -rf "${D}/usr/share/${P}/libraries/Ethernet"
+		cp -a "${S}/../sanguino-software-${SNG_PV}/libraries/Ethernet" \
+		"${D}/usr/share/${P}/libraries/Ethernet"
+
+		rm -rf "${D}/usr/share/${P}/libraries/Servo"
+		cp -a "${S}/../sanguino-software-${SNG_PV}/libraries/Servo" \
+		"${D}/usr/share/${P}/libraries/Servo"
+
+		rm -rf "${D}/usr/share/${P}/libraries/Wire"
+		cp -a "${S}/../sanguino-software-${SNG_PV}/libraries/Wire" \
+		"${D}/usr/share/${P}/libraries/Wire"
+
+		cat "${S}/../sanguino-software-${SNG_PV}/boards.txt" >> \
+		"${D}/usr/share/${P}/hardware/boards.txt"
+	fi
+	if use reprap; then
+		cp -a "${S}/../reprap-gen3-firmware-2009-08-05/libraries/RepRapSDCard" \
+		"${D}/usr/share/${P}/libraries/RepRapSDCard"
+
+		cp -a "${S}/../reprap-gen3-firmware-2009-08-05/libraries/SimplePacket" \
+		"${D}/usr/share/${P}/libraries/SimplePacket"
+	fi
+	if use makerbotwatch; then
+		cat "${FILESDIR}"/makerbot-watch.txt >> \
+		"${D}/usr/share/${P}/hardware/boards.txt"
+	fi
+	if use pidcontrol; then
+		cp -a "${S}/../PID_Beta6" \
+		"${D}/usr/share/${P}/libraries/PID_Beta6"
+	fi
+
+	if use timer1; then
+	    mkdir -p "${D}/usr/share/${P}/libraries/Timer1"
+	    cp -a "${S}/../TimerOne.cpp" \
+		"${D}/usr/share/${P}/libraries/Timer1/"
+	    cp -a "${S}/../TimerOne.h" \
+		"${D}/usr/share/${P}/libraries/Timer1/"
+	fi
+
+	if use mstimer2; then
+	    cp -a "${S}/../MsTimer2/" \
+		"${D}/usr/share/${P}/libraries/MsTimer2"
+	fi
+
+	dodoc readme.txt
+}
